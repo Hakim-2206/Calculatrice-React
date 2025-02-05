@@ -13,16 +13,31 @@ const getStyleName = (btn) => {
   return className[btn];
 };
 
+const math = (a, b, sign) => {
+  const result = {
+    "+": (a, b) => a + b,
+    "-": (a, b) => a - b,
+    x: (a, b) => a * b,
+  };
+  return result[sign](a, b);
+};
+
 const Button = ({ value }) => {
   // Récuperation de l'etat de la calculette depuis le contexte
   const { calc, setCalc } = useContext(CalcContext);
 
   // Utilisateur clique point
   const commaClick = () => {
-    setCalc({
-      ...calc, // Maintient l'état précedent
-      num: !calc.num.toString().includes(".") ? calc.num + value : calc.num,
-    });
+    // setCalc({
+    //   ...calc, // Maintient l'état précedent
+    //   num: !calc.num.toString().includes(".") ? calc.num + value : calc.num,
+    // });
+    if (!calc.num.toString().includes(".")) {
+      setCalc({
+        ...calc,
+        num: calc.num.toString() + ".", // Ajoute le point décimal
+      });
+    }
   };
 
   // Utilisateur clique sur C "delete"
@@ -34,45 +49,46 @@ const Button = ({ value }) => {
   const handleClickBtn = () => {
     const numberString = value.toString(); // convertir en chaine de caracteres et faire une condition
 
-    // Si un chiffre est tapé après un resultat (pas d'opérateur avant), on démarre un nouveau calcul
-    if (calc.res && !calc.sign) {
-      setCalc({
-        sign: "",
-        num: Number(numberString),
-        res: 0,
-      });
-      // sinon, on concatène le chiffre actuel avec le précedent pour en former un nouveau
-    } else {
+    if (calc.num.toString().includes(".")) {
       setCalc({
         ...calc,
-        num: Number(calc.num.toString() + numberString), // Empeche les zéro inutiles au début
+        num: calc.num.toString() + numberString, // Concatène le chiffre
+      });
+    } else {
+      // Si aucun point décimal n'est présent, on traite comme un entier
+      setCalc({
+        ...calc,
+        num: Number(calc.num.toString() + numberString),
       });
     }
   };
 
   //Utilisateur clique sur un opérateur
   const signClick = () => {
-    setCalc({
-      sign: value,
-      res: !calc.res && calc.num ? calc.num : calc.res,
-      num: "", // Reinitialise le nombre
-    });
+    if (calc.res && calc.num) {
+      setCalc({
+        res: math(calc.res, calc.num, calc.sign),
+        sign: value,
+        num: 0,
+      });
+    } else {
+      // Si aucun résultat n'existe encore, on commence un calcul classique
+      setCalc({
+        sign: value,
+        res: calc.num, // initialise le résultat avec le nombre actuel
+        num: 0, // vide le champ num
+      });
+    }
   };
 
   // Utilisateur clique sur égal
   const equalsClick = () => {
     if (calc.res && calc.num) {
+      const res = parseFloat(calc.res);
+      const num = parseFloat(calc.num);
       // si il y'a résultat et un nombre, on effectue le calcul
-      const math = (a, b, sign) => {
-        const result = {
-          "+": (a, b) => a + b,
-          "-": (a, b) => a - b,
-          x: (a, b) => a * b,
-        };
-        return result[sign](a, b);
-      };
       setCalc({
-        res: math(calc.res, calc.num, calc.sign), // Met à jour l'état de l'input en fonction du res
+        res: math(res, num, calc.sign), // Met à jour l'état de l'input en fonction du res
         sign: "",
         num: 0,
       });
